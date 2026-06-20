@@ -1,7 +1,7 @@
 {
     "id": "convoro-onair",
     "name": "OnAir",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Show a live stream in your community. Embed a YouTube or Twitch broadcast with a pulsing LIVE badge in the sidebar while you're on air — no streaming infrastructure required.",
     "author": "Convoro",
     "convoro": ">=1.39.6",
