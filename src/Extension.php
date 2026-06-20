@@ -133,6 +133,10 @@ class Extension extends ServiceProvider
             $s->started_at = now();
             $s->save();
 
+            // Let add-ons (OnAir+) react to a stream going live — e.g. notify
+            // followers — regardless of provider.
+            event(new Events\StreamStarted($s));
+
             return response()->json(['ok' => true]);
         });
 
