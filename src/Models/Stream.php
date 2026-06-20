@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $provider
  * @property string $external_id
  * @property string|null $title
+ * @property string|null $embed_url
  * @property string $status
  * @property \Carbon\Carbon|null $started_at
  * @property \Carbon\Carbon|null $ended_at
@@ -58,8 +59,19 @@ class Stream extends Model
      * matching the page hostname — which the server only knows from the request —
      * so the caller passes the live host for twitch.
      */
+    /** Whether this stream plays via HLS (RTMP ingest) rather than an iframe embed. */
+    public function isHls(): bool
+    {
+        return $this->provider === 'rtmp' && ! empty($this->embed_url);
+    }
+
     public function embedUrl(?string $host = null): string
     {
+        // RTMP streams (OnAir+) carry a ready-made HLS .m3u8 playback URL.
+        if ($this->provider === 'rtmp') {
+            return (string) $this->embed_url;
+        }
+
         if ($this->provider === 'twitch') {
             $parent = $host ?: 'localhost';
 

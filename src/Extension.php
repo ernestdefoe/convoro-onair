@@ -222,16 +222,43 @@ class Extension extends ServiceProvider
         $av = Present::avatar($s->author);
         $src = $s->embedUrl($request->getHost());
 
+        // RTMP streams (OnAir+) play via HLS in a <video> hydrated by hls.js;
+        // YouTube/Twitch use a plain iframe.
+        if ($s->isHls()) {
+            $player = '<div class="oa-frame"><video id="oa-hls" controls autoplay playsinline '
+                .'style="position:absolute;inset:0;width:100%;height:100%;background:#000" data-src="'.self::e($src).'"></video></div>';
+            $js = self::hlsJs();
+        } else {
+            $player = '<div class="oa-frame"><iframe src="'.self::e($src).'" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>';
+            $js = '';
+        }
+
         $body = '<div class="oa-wrap oa-narrow">'
             .'<div class="oa-crumbs"><a href="/live">'.self::e(self::t('Live now')).'</a> <span>/</span> '.self::e($av['name']).'</div>'
             .'<div class="oa-watch-head">'.self::avatarHtml($av, 44)
             .'<div class="oa-watch-meta"><div class="oa-watch-name">'.self::e($av['name'])
             .' <span class="oa-pill"><span class="oa-dot"></span>'.self::e(self::t('Live')).'</span></div>'
             .($s->title ? '<div class="oa-watch-title">'.self::e($s->title).'</div>' : '').'</div></div>'
-            .'<div class="oa-frame"><iframe src="'.self::e($src).'" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>'
+            .$player
             .'</div>';
 
-        return ExtPage::render($av['name'].' — '.self::t('Live'), $body, self::css());
+        return ExtPage::render($av['name'].' — '.self::t('Live'), $body, self::css(), $js);
+    }
+
+    /** Hydrate the HLS <video> with hls.js (native HLS on Safari, else the lib). */
+    private static function hlsJs(): string
+    {
+        return <<<JS
+        (function(){
+          var v=document.getElementById('oa-hls'); if(!v) return;
+          var src=v.getAttribute('data-src');
+          if(v.canPlayType('application/vnd.apple.mpegurl')){ v.src=src; return; }
+          var s=document.createElement('script');
+          s.src='https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js';
+          s.onload=function(){ if(window.Hls&&window.Hls.isSupported()){ var h=new window.Hls(); h.loadSource(src); h.attachMedia(v); } else { v.src=src; } };
+          document.head.appendChild(s);
+        })();
+        JS;
     }
 
     // --- Admin -------------------------------------------------------------
