@@ -2,6 +2,7 @@
 
 namespace Convoro\Ext\OnAir;
 
+use App\Support\ExtPage;
 use App\Support\Settings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -12,7 +13,8 @@ use Illuminate\Support\ServiceProvider;
  *
  * Embeds a live YouTube or Twitch broadcast in the forum sidebar with a pulsing
  * LIVE badge while you're on air. Settings-only (no table); the frontend builds
- * the embed so Twitch's required `parent` can use the live hostname.
+ * the embed so Twitch's required `parent` can use the live hostname. The admin
+ * page is server-rendered through ExtPage so it inherits the forum theme.
  */
 class Extension extends ServiceProvider
 {
@@ -23,7 +25,7 @@ class Extension extends ServiceProvider
 
         // Admin: settings page + save.
         Route::middleware(['web', 'auth', 'admin'])->prefix('admin/ext/onair')->group(function () {
-            Route::get('/', fn () => response(self::adminPage()));
+            Route::get('/', fn () => self::adminPage());
             Route::post('/', function (Request $request) {
                 $data = $request->validate([
                     'live' => ['boolean'],
@@ -55,9 +57,8 @@ class Extension extends ServiceProvider
         ];
     }
 
-    private static function adminPage(): string
+    private static function adminPage(): \Inertia\Response
     {
-        $csrf = csrf_token();
         $e = fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES);
         $live = Settings::get('onair.live') ? 'checked' : '';
         $platform = (string) Settings::get('onair.platform', 'youtube');
@@ -65,38 +66,62 @@ class Extension extends ServiceProvider
         $title = $e(Settings::get('onair.title'));
         $sel = fn ($a, $b) => $a === $b ? 'selected' : '';
 
-        return <<<HTML
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="csrf-token" content="{$csrf}"><title>OnAir · Convoro</title>
-<style>
-*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:#0f1120;color:#e6e8f5}
-.wrap{max-width:640px;margin:0 auto;padding:40px 20px}a{color:#8b8bf0}h1{font-size:24px;margin:0 0 4px}.sub{color:#9aa0b8;margin:0 0 24px;font-size:14px}
-.card{background:#14172a;border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px}
-label.f{display:block;font-size:13px;color:#c7cbe0;margin:14px 0 4px}
-input,select{width:100%;background:#0f1120;border:1px solid rgba(255,255,255,.1);border-radius:9px;color:#e6e8f5;padding:10px 12px;font:inherit}
-label.chk{display:flex;align-items:center;gap:8px;font-size:15px;color:#c7cbe0;margin:4px 0 6px}
-.btn{border:0;border-radius:9px;padding:10px 18px;font-weight:700;font-size:14px;cursor:pointer;background:#5b5bd6;color:#fff;margin-top:18px}
-.top{display:flex;align-items:center;gap:12px;margin-bottom:20px}.sp{flex:1}.ok{color:#34d399;font-size:13px;margin-left:10px}
-.hint{color:#6b7194;font-size:12px;margin:4px 0 0}
-</style></head><body><div class="wrap">
-<div class="top"><div><h1>OnAir</h1><p class="sub">Embed a live stream in the community sidebar.</p></div><span class="sp"></span><a href="/admin/marketplace">← Marketplace</a></div>
-<div class="card">
-<label class="chk"><input type="checkbox" id="live" {$live}> 🔴 We're live — show the player now</label>
-<label class="f">Platform</label><select id="platform"><option value="youtube" {$sel($platform,'youtube')}>YouTube</option><option value="twitch" {$sel($platform,'twitch')}>Twitch</option></select>
-<label class="f">Stream ID</label><input id="stream_id" value="{$sid}" placeholder="YouTube video ID or Twitch channel name">
-<p class="hint">YouTube: the video ID from the watch URL (…/watch?v=<b>ID</b>). Twitch: your channel name.</p>
-<label class="f">Title</label><input id="title" value="{$title}" placeholder="Live now">
-<button class="btn" id="save">Save</button><span class="ok" id="msg"></span>
-</div></div><script>
-const csrf=document.querySelector('meta[name=csrf-token]').content;
-const h={'X-CSRF-TOKEN':csrf,'Content-Type':'application/json','Accept':'application/json'};
-document.getElementById('save').addEventListener('click',async()=>{
-  const body={live:document.getElementById('live').checked,platform:document.getElementById('platform').value,
-    stream_id:document.getElementById('stream_id').value,title:document.getElementById('title').value};
-  const r=await fetch('/admin/ext/onair',{method:'POST',headers:h,body:JSON.stringify(body)});
-  const m=document.getElementById('msg');m.textContent=r.ok?'Saved ✓':'Error';setTimeout(()=>m.textContent='',2000);
-});
-</script></body></html>
-HTML;
+        $body = <<<HTML
+        <div class="oa-wrap">
+          <div class="oa-hero">
+            <div>
+              <div class="oa-eyebrow">OnAir</div>
+              <h1 class="oa-h1">Go live in your community</h1>
+              <p class="oa-sub">Embed a YouTube or Twitch broadcast with a pulsing LIVE badge in the sidebar — no streaming infrastructure required.</p>
+            </div>
+          </div>
+          <div class="oa-card">
+            <label class="oa-chk"><input type="checkbox" id="live" {$live}> <span>🔴 We're live — show the player now</span></label>
+            <label class="oa-f">Platform</label>
+            <select id="platform"><option value="youtube" {$sel($platform,'youtube')}>YouTube</option><option value="twitch" {$sel($platform,'twitch')}>Twitch</option></select>
+            <label class="oa-f">Stream ID</label>
+            <input id="stream_id" value="{$sid}" placeholder="YouTube video ID or Twitch channel name">
+            <p class="oa-hint">YouTube: the video ID from the watch URL (…/watch?v=<b>ID</b>). Twitch: your channel name.</p>
+            <label class="oa-f">Title</label>
+            <input id="title" value="{$title}" placeholder="Live now">
+            <div class="oa-status" id="msg">Changes save automatically</div>
+          </div>
+        </div>
+        HTML;
+
+        $css = <<<CSS
+        .oa-wrap{max-width:640px;margin:0 auto;padding:24px 16px 64px}
+        .ext-embed .oa-wrap{padding:0}
+        .oa-hero{padding:26px 28px;margin-bottom:20px;border-radius:18px;border:1px solid rgb(var(--c-border));
+          background:linear-gradient(135deg,rgba(91,91,214,.16),rgba(139,92,246,.10)),rgb(var(--c-surface))}
+        .oa-eyebrow{font-size:13px;font-weight:800;letter-spacing:.04em;color:rgb(var(--c-primary));margin-bottom:6px}
+        .oa-h1{font-size:1.7rem;font-weight:900;letter-spacing:-.02em;margin:0;color:rgb(var(--c-text))}
+        .oa-sub{margin:8px 0 0;color:rgb(var(--c-text-2));font-size:14px;line-height:1.5}
+        .oa-card{background:rgb(var(--c-surface));border:1px solid rgb(var(--c-border));border-radius:16px;padding:22px}
+        .oa-f{display:block;font-size:13px;font-weight:600;color:rgb(var(--c-text-2));margin:16px 0 5px}
+        .oa-card input:not([type=checkbox]),.oa-card select{width:100%;font:inherit;font-size:14px;padding:10px 12px;border-radius:10px;
+          border:1px solid rgb(var(--c-border));background:rgb(var(--c-surface-2));color:rgb(var(--c-text))}
+        .oa-card input:focus,.oa-card select:focus{outline:none;border-color:rgb(var(--c-primary))}
+        .oa-chk{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:600;color:rgb(var(--c-text));cursor:pointer}
+        .oa-chk input{width:18px;height:18px;accent-color:rgb(var(--c-primary))}
+        .oa-hint{color:rgb(var(--c-muted));font-size:12px;margin:5px 0 0}
+        .oa-status{margin-top:18px;font-size:13px;color:rgb(var(--c-muted))}
+        CSS;
+
+        $js = <<<JS
+        var msg=document.getElementById('msg'),IDLE='Changes save automatically',t=null;
+        function notify(message,kind){try{if(window.parent!==window)window.parent.postMessage({type:'convoro:toast',message:message,kind:kind||'success'},location.origin);}catch(e){}}
+        function collect(){return{live:document.getElementById('live').checked,platform:document.getElementById('platform').value,stream_id:document.getElementById('stream_id').value,title:document.getElementById('title').value};}
+        function save(){msg.style.color='';msg.textContent='Saving…';
+          fetch('/admin/ext/onair',{method:'POST',headers:H,body:JSON.stringify(collect())}).then(function(r){
+            msg.textContent=r.ok?'Saved ✓':'Error — will retry';notify(r.ok?'Settings saved':"Couldn't save",r.ok?'success':'error');
+            setTimeout(function(){if(msg.textContent==='Saved ✓')msg.textContent=IDLE;},1800);
+          }).catch(function(){msg.textContent='Error — will retry';notify("Couldn't save",'error');});}
+        function debounced(){if(t)clearTimeout(t);t=setTimeout(save,700);}
+        ['stream_id','title'].forEach(function(id){document.getElementById(id).addEventListener('input',debounced);});
+        ['live','platform'].forEach(function(id){document.getElementById(id).addEventListener('change',save);});
+        JS;
+
+        return ExtPage::render('OnAir', $body, $css, $js);
     }
 }

@@ -8,6 +8,7 @@ const c = window.Convoro;
 if (c && typeof c.registerSlot === 'function') {
   c.registerSlot('forum:sidebar', {
     ext: 'convoro-onair',
+    label: 'OnAir',
     order: -30,
     mount(el) {
       fetch('/api/ext/onair/current', { headers: { Accept: 'application/json' } })
