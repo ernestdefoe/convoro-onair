@@ -1,23 +1,35 @@
 # OnAir for Convoro
 
-Go live in your community with [Convoro](https://convoro.co). OnAir embeds a
-**YouTube** or **Twitch** broadcast in the forum sidebar with a pulsing **LIVE**
-badge while you're on air — no streaming infrastructure required.
+Per-user live streaming for your [Convoro](https://convoro.co) community. Any
+member can go live with a **YouTube** or **Twitch** broadcast — a pulsing
+**LIVE** badge then follows their avatar everywhere, a sidebar card lists who's
+on air, and a public **/live** directory plus watch pages let everyone tune in.
+No streaming infrastructure required.
 
 Free, first-party, MIT-licensed. Requires Convoro core **≥ 1.39.6**.
 
 ## Features
 
-- **Sidebar player** — a 16:9 embed with a pulsing LIVE badge appears in the
-  forum sidebar whenever you mark yourself live.
-- **YouTube & Twitch** — paste a YouTube video ID or a Twitch channel name. The
-  embed is built client-side so Twitch's required `parent` uses the live host.
-- **One-switch control** — flip "We're live" on or off from the admin; the
-  player shows and hides instantly.
-- **Theme-matched admin** — the settings page renders inside the forum theme and
-  saves automatically as you type.
+- **Go live from the account menu** — pick YouTube or Twitch, paste a video ID
+  or channel name, add a title, and you're broadcasting.
+- **LIVE badge everywhere** — while you're live, a LIVE badge appears on your
+  avatar across the whole forum (driven by core's live-user set).
+- **Live now sidebar card** — lists everyone currently streaming; hidden when
+  no one is live.
+- **Public directory + watch pages** — `/live` shows a grid of live members;
+  `/live/{user}` embeds the broadcast in a 16:9 player. Twitch's required
+  `parent` is built from the live host server-side.
+- **Admin manager** — see who's live and force-end any stream. Who can go live
+  is controlled by the `onair.broadcast` permission (on by default).
+- **Auto-reap** — streams left "live" for more than 12 hours are ended
+  automatically (`convoro:onair-reap`, scheduled every 15 minutes).
+
+## Permissions
+
+`onair.broadcast` is granted to all members by default. Restrict it from
+**Admin → Permissions** if you want only certain groups to be able to go live.
 
 ## Install
 
-Install from the Convoro Marketplace, then set your platform, stream ID and
-title under **Admin → Extensions → OnAir** and toggle **We're live**.
+Install from the Convoro Marketplace and enable it. Members can then go live
+from the account menu, and the **Live** link in the header opens the directory.
