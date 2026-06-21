@@ -93,7 +93,7 @@ function renderSidebar(host) {
   pill.appendChild(el('span', 'width:6px;height:6px;border-radius:50%;background:#fff;animation:oa-pulse 1.6s ease-in-out infinite'));
   pill.appendChild(document.createTextNode(tr('Live')));
   head.appendChild(pill);
-  head.appendChild(el('b', 'font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:rgb(var(--c-primary-700,66 66 181))', tr('Live now')));
+  head.appendChild(el('b', 'font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:rgb(var(--c-text-2,74 81 104))', tr('Live now')));
   card.appendChild(head);
 
   const list = el('div', null);

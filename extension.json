@@ -1,7 +1,7 @@
 {
     "id": "convoro-onair",
     "name": "OnAir",
-    "version": "2.2.0",
+    "version": "2.2.1",
     "description": "Per-user live streaming for your community. Any member can go live with a YouTube or Twitch broadcast — a pulsing LIVE badge appears on their avatar everywhere, a sidebar card lists who's on air, and a public directory (/live) plus watch pages let members tune in. No streaming infrastructure required.",
     "author": "Convoro",
     "convoro": ">=1.40.0",
